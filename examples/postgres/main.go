@@ -63,9 +63,9 @@ func schedule() {
 		Body:    "<h1>Hello from the job scheduler!</h1>",
 	}
 
-	s.ScheduleIn(j1, 20*time.Second)
-	s.ScheduleIn(j2, 10*time.Second)
-	s.ScheduleIn(emailJob, 30*time.Second)
+	s.ScheduleIn(j1, 2*time.Second)
+	s.ScheduleIn(j2, 1*time.Second)
+	s.ScheduleIn(emailJob, 3*time.Second)
 
 }
 
@@ -84,6 +84,6 @@ func listen() {
 func main() {
 	defer close()
 
-	// schedule()
+	schedule()
 	listen()
 }
