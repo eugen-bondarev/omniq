@@ -5,23 +5,23 @@ import (
 	"time"
 )
 
-type impl[T any] struct {
+type Scheduler[T any] struct {
 	storage SchedulerStorage[T]
 }
 
-func New[T any](storage SchedulerStorage[T]) *impl[T] {
-	return &impl[T]{
+func New[T any](storage SchedulerStorage[T]) *Scheduler[T] {
+	return &Scheduler[T]{
 		storage: storage,
 	}
 }
 
-func NewWithDependencies[T any](storage SchedulerStorage[T]) *impl[T] {
-	return &impl[T]{
+func NewWithDependencies[T any](storage SchedulerStorage[T]) *Scheduler[T] {
+	return &Scheduler[T]{
 		storage: storage,
 	}
 }
 
-func (s *impl[T]) Listen(container T) {
+func (s *Scheduler[T]) Listen(container T) {
 	log.Println("Scheduler is running")
 	for {
 		for _, j := range s.storage.GetDue() {
@@ -33,6 +33,6 @@ func (s *impl[T]) Listen(container T) {
 	}
 }
 
-func (s *impl[T]) ScheduleIn(j Job[T], d time.Duration) {
+func (s *Scheduler[T]) ScheduleIn(j Job[T], d time.Duration) {
 	s.storage.Push(j, time.Now().Add(d))
 }

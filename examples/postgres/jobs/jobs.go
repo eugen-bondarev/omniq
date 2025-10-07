@@ -12,7 +12,7 @@ type Job1 struct {
 	MyData string
 }
 
-func (j *Job1) Run(container deps.Dependencies) {
+func (j *Job1) Run(d deps.Dependencies) {
 	log.Println("Job1 is running", j.MyData)
 }
 
@@ -21,7 +21,7 @@ type Job2 struct {
 	Answer float64
 }
 
-func (j *Job2) Run(container deps.Dependencies) {
+func (j *Job2) Run(d deps.Dependencies) {
 	log.Println("Job2 is running", j.Answer)
 }
 
@@ -33,8 +33,8 @@ type EmailJob struct {
 	Body    string
 }
 
-func (j *EmailJob) Run(container deps.Dependencies) {
-	err := container.Mailer.SendEmail(j.To, j.Subject, j.Body)
+func (j *EmailJob) Run(d deps.Dependencies) {
+	err := d.Mailer.SendEmail(j.To, j.Subject, j.Body)
 	if err != nil {
 		log.Println("SMTP service not available")
 		return
