@@ -36,7 +36,7 @@ var pgConfig = postgresConfig{
 
 var db *sql.DB
 
-var s *omniq.Scheduler[deps.Dependencies]
+var scheduler *omniq.Scheduler[deps.Dependencies]
 
 func init() {
 	var err error
@@ -46,8 +46,15 @@ func init() {
 	}
 
 	factory := &jobs.JobFactory{}
-	pgStorage := omniq.NewPGStorage(db, factory, omniq.WithTableName("lorem_ipsum"))
-	s = omniq.NewWithDependencies(pgStorage)
+
+	// jsonStorage := omniq.NewJSONStorage("jobs.json", factory)
+	// s = omniq.NewWithDependencies(jsonStorage)
+
+	pgStorage, err := omniq.NewPGStorage(db, factory, omniq.WithTableName("lorem_ipsum"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	scheduler = omniq.NewWithDependencies(pgStorage)
 }
 
 func close() {
@@ -63,9 +70,9 @@ func schedule() {
 		Body:    "<h1>Hello from the job scheduler!</h1>",
 	}
 
-	s.ScheduleIn(j1, 2*time.Second)
-	s.ScheduleIn(j2, 1*time.Second)
-	s.ScheduleIn(emailJob, 3*time.Second)
+	scheduler.ScheduleIn(j1, 2*time.Second)
+	scheduler.ScheduleIn(j2, 1*time.Second)
+	scheduler.ScheduleIn(emailJob, 3*time.Second)
 
 }
 
@@ -74,7 +81,7 @@ func listen() {
 		Mailer: &services.MockSMTPService{},
 	}
 
-	go s.Listen(container)
+	go scheduler.Listen(container)
 
 	for {
 		time.Sleep(1 * time.Second)

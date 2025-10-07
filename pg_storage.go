@@ -31,18 +31,21 @@ func newDefaultPGStorageOptions() pgStorageOptions {
 	return pgStorageOptions{tableName: "omniq_jobs"}
 }
 
-func NewPGStorage[T any](db *sql.DB, factory JobFactory[T], opts ...pgStorageOption) *pgStorage[T] {
+func NewPGStorage[T any](db *sql.DB, factory JobFactory[T], opts ...pgStorageOption) (*pgStorage[T], error) {
 	options := newDefaultPGStorageOptions()
 	for _, opt := range opts {
 		opt(&options)
 	}
 
 	s := &pgStorage[T]{db: db, factory: factory, options: options}
-	s.createTable()
-	return s
+	err := s.createTable()
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
-func (s *pgStorage[T]) createTable() {
+func (s *pgStorage[T]) createTable() error {
 	cmd := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
   id UUID NOT NULL,
   time TIMESTAMPTZ NOT NULL,
@@ -52,33 +55,36 @@ func (s *pgStorage[T]) createTable() {
 
 	_, err := s.db.Exec(cmd)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
-func (s *pgStorage[T]) Push(j Job[T], t time.Time) {
+func (s *pgStorage[T]) Push(j Job[T], t time.Time) error {
 	id := uuid.New().String()
 	state, err := json.Marshal(j)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	_, err = s.db.Exec("INSERT INTO "+s.options.tableName+" (id, time, state, type) VALUES ($1, $2, $3, $4)", id, t, state, j.Type())
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
-func (s *pgStorage[T]) Delete(j Job[T]) {
+func (s *pgStorage[T]) Delete(j Job[T]) error {
 	_, err := s.db.Exec("DELETE FROM "+s.options.tableName+" WHERE id = $1", j.GetIDContainer().GetID())
 	if err != nil {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
-func (s *pgStorage[T]) GetDue() []Job[T] {
+func (s *pgStorage[T]) GetDue() ([]Job[T], error) {
 	rows, err := s.db.Query("SELECT id, time, state, type FROM "+s.options.tableName+" WHERE time <= $1", time.Now())
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer rows.Close()
 	due := []Job[T]{}
@@ -89,16 +95,16 @@ func (s *pgStorage[T]) GetDue() []Job[T] {
 		var typ string
 		err = rows.Scan(&id, &t, &stateEncoded, &typ)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		state := map[string]any{}
 		err = json.Unmarshal(stateEncoded, &state)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		j := s.factory.Instantiate(typ, id, state)
 		due = append(due, j)
 	}
 
-	return due
+	return due, nil
 }
