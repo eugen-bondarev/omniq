@@ -1,3 +1,3 @@
-//go:generate sh -c "cd ../../.. && go run ./cmd/omniq examples/postgres/jobs"
+//go:generate sh -c "cd ../../.. && go run ./cmd/omniq generate examples/postgres/jobs"
 
 package jobs
