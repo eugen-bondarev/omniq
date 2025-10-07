@@ -30,6 +30,7 @@ func (s *Scheduler[T]) Listen(container T) {
 			time.Sleep(1 * time.Second)
 			continue
 		}
+
 		for _, j := range jobs {
 			j.Run(container)
 			err = s.storage.Delete(j)
