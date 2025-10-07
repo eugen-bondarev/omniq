@@ -74,39 +74,29 @@ func (f *JobFactory) Instantiate(t string, id string, data map[string]any) omniq
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: %s <jobs_file>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s <jobs_directory>\n", os.Args[0])
 		os.Exit(1)
 	}
 
-	jobsFile := os.Args[1]
+	jobsDir := os.Args[1]
 
-	// Parse the jobs file
-	jobs, packageName, depImport, err := parseJobsFile(jobsFile)
+	// Parse all job files in the directory
+	jobs, packageName, depType, depImport, err := parseJobsDirectory(jobsDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsing jobs file: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error parsing jobs directory: %v\n", err)
 		os.Exit(1)
 	}
 
 	if len(jobs) == 0 {
-		fmt.Fprintf(os.Stderr, "No job structs found in %s\n", jobsFile)
+		fmt.Fprintf(os.Stderr, "No job structs found in %s\n", jobsDir)
 		os.Exit(1)
-	}
-
-	// Verify all jobs have the same dependency type
-	firstDepType := jobs[0].DepType
-	for _, job := range jobs[1:] {
-		if job.DepType != firstDepType {
-			fmt.Fprintf(os.Stderr, "Error: Job %s has dependency type %s, but %s has %s. All jobs must have the same dependency type.\n",
-				job.Name, job.DepType, jobs[0].Name, firstDepType)
-			os.Exit(1)
-		}
 	}
 
 	// Generate the code
 	data := GenerationData{
 		Package:   packageName,
 		Jobs:      jobs,
-		DepType:   firstDepType,
+		DepType:   depType,
 		DepImport: depImport,
 	}
 
@@ -130,8 +120,7 @@ func main() {
 	}
 
 	// Write to jobs_gen.go in the same directory
-	dir := filepath.Dir(jobsFile)
-	outputFile := filepath.Join(dir, "jobs_gen.go")
+	outputFile := filepath.Join(jobsDir, "jobs_gen.go")
 
 	if err := os.WriteFile(outputFile, formatted, 0644); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing generated file: %v\n", err)
@@ -141,27 +130,93 @@ func main() {
 	fmt.Printf("Generated %s\n", outputFile)
 }
 
-func parseJobsFile(filename string) ([]JobInfo, string, string, error) {
+func parseJobsDirectory(jobsDir string) ([]JobInfo, string, string, string, error) {
+	// Find all .go files in the directory, excluding generate.go and *_gen.go
+	files, err := filepath.Glob(filepath.Join(jobsDir, "*.go"))
+	if err != nil {
+		return nil, "", "", "", err
+	}
+
+	var jobFiles []string
+	for _, file := range files {
+		basename := filepath.Base(file)
+		if basename == "generate.go" || strings.HasSuffix(basename, "_gen.go") {
+			continue
+		}
+		jobFiles = append(jobFiles, file)
+	}
+
+	if len(jobFiles) == 0 {
+		return nil, "", "", "", fmt.Errorf("no job files found in directory %s", jobsDir)
+	}
+
+	var allJobs []JobInfo
+	var packageName string
+	var commonDepType string
+	var depImportPath string
+
+	// Parse each job file
+	for _, filename := range jobFiles {
+		jobs, pkgName, fileDepType, depImport, err := parseJobsFile(filename)
+		if err != nil {
+			return nil, "", "", "", fmt.Errorf("error parsing %s: %v", filename, err)
+		}
+
+		if packageName == "" {
+			packageName = pkgName
+		} else if packageName != pkgName {
+			return nil, "", "", "", fmt.Errorf("package name mismatch: %s has package %s, but expected %s", filename, pkgName, packageName)
+		}
+
+		if commonDepType == "" && len(jobs) > 0 {
+			commonDepType = fileDepType
+			depImportPath = depImport
+		}
+
+		// Verify all jobs in this file have the same dependency type
+		for _, job := range jobs {
+			if job.DepType != commonDepType {
+				return nil, "", "", "", fmt.Errorf("dependency type mismatch: job %s has type %s, but expected %s",
+					job.Name, job.DepType, commonDepType)
+			}
+		}
+
+		allJobs = append(allJobs, jobs...)
+	}
+
+	return allJobs, packageName, commonDepType, depImportPath, nil
+}
+
+func parseJobsFile(filename string) ([]JobInfo, string, string, string, error) {
 	fset := token.NewFileSet()
 	node, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
 	if err != nil {
-		return nil, "", "", err
+		return nil, "", "", "", err
 	}
 
 	var jobs []JobInfo
 	packageName := node.Name.Name
-	depImportPath := ""
+	var depImportPath string
+	var commonDepType string
 
-	// Find imports to determine dependency package
+	// First pass: find imports to build import map
+	importMap := make(map[string]string) // local name -> full path
 	for _, imp := range node.Imports {
 		if imp.Path.Value != "" {
 			path := strings.Trim(imp.Path.Value, "\"")
-			if strings.Contains(path, "/deps") {
-				depImportPath = path
+			var localName string
+			if imp.Name != nil {
+				localName = imp.Name.Name
+			} else {
+				// Extract package name from path
+				parts := strings.Split(path, "/")
+				localName = parts[len(parts)-1]
 			}
+			importMap[localName] = path
 		}
 	}
 
+	// Second pass: find job structs and their Run methods
 	for _, decl := range node.Decls {
 		genDecl, ok := decl.(*ast.GenDecl)
 		if !ok || genDecl.Tok != token.TYPE {
@@ -186,9 +241,27 @@ func parseJobsFile(filename string) ([]JobInfo, string, string, error) {
 			}
 
 			// Extract dependency type from Run method
-			depType, err := extractDependencyType(runMethod)
+			depType, err := extractDependencyType(runMethod, importMap)
 			if err != nil {
-				return nil, "", "", fmt.Errorf("error extracting dependency type from %s.Run: %v", typeSpec.Name.Name, err)
+				return nil, "", "", "", fmt.Errorf("error extracting dependency type from %s.Run: %v", typeSpec.Name.Name, err)
+			}
+
+			// Set common dependency type and import
+			if commonDepType == "" {
+				commonDepType = depType
+				// Find the import path for this dependency type
+				if strings.Contains(depType, ".") {
+					parts := strings.Split(depType, ".")
+					if len(parts) >= 2 {
+						pkgName := parts[0]
+						if importPath, ok := importMap[pkgName]; ok {
+							depImportPath = importPath
+						}
+					}
+				}
+			} else if depType != commonDepType {
+				return nil, "", "", "", fmt.Errorf("dependency type mismatch in file %s: job %s has type %s, but expected %s",
+					filename, typeSpec.Name.Name, depType, commonDepType)
 			}
 
 			// Extract fields (excluding WithID)
@@ -220,7 +293,7 @@ func parseJobsFile(filename string) ([]JobInfo, string, string, error) {
 		}
 	}
 
-	return jobs, packageName, depImportPath, nil
+	return jobs, packageName, commonDepType, depImportPath, nil
 }
 
 func findRunMethod(node *ast.File, structName string) *ast.FuncDecl {
@@ -245,7 +318,7 @@ func findRunMethod(node *ast.File, structName string) *ast.FuncDecl {
 	return nil
 }
 
-func extractDependencyType(funcDecl *ast.FuncDecl) (string, error) {
+func extractDependencyType(funcDecl *ast.FuncDecl, importMap map[string]string) (string, error) {
 	if funcDecl.Type.Params == nil || len(funcDecl.Type.Params.List) == 0 {
 		return "", fmt.Errorf("Run method has no parameters")
 	}
@@ -256,7 +329,21 @@ func extractDependencyType(funcDecl *ast.FuncDecl) (string, error) {
 	}
 
 	param := funcDecl.Type.Params.List[0]
-	return exprToString(param.Type), nil
+	depType := exprToString(param.Type)
+
+	// Resolve the full type name including package if needed
+	if strings.Contains(depType, ".") {
+		parts := strings.Split(depType, ".")
+		if len(parts) >= 2 {
+			pkgName := parts[0]
+			if _, ok := importMap[pkgName]; ok {
+				// Type is already fully qualified with package name
+				return depType, nil
+			}
+		}
+	}
+
+	return depType, nil
 }
 
 func exprToString(expr ast.Expr) string {
