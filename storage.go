@@ -5,7 +5,7 @@ import (
 )
 
 type SchedulerStorage[TDeps any] interface {
-	push(j Job[TDeps], t time.Time)
-	delete(j Job[TDeps])
-	getDue() []Job[TDeps]
+	Push(j Job[TDeps], t time.Time)
+	Delete(j Job[TDeps])
+	GetDue() []Job[TDeps]
 }

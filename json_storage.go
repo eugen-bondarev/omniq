@@ -24,7 +24,7 @@ func NewJSONStorage[T any](fileName string, factory JobFactory[T]) *jsonStorage[
 	return &jsonStorage[T]{fileName: fileName, factory: factory}
 }
 
-func (s *jsonStorage[T]) push(j Job[T], t time.Time) {
+func (s *jsonStorage[T]) Push(j Job[T], t time.Time) {
 	content, err := os.ReadFile(s.fileName)
 	if err != nil {
 		panic(err)
@@ -42,7 +42,7 @@ func (s *jsonStorage[T]) push(j Job[T], t time.Time) {
 	os.WriteFile(s.fileName, content, 0644)
 }
 
-func (s *jsonStorage[T]) delete(j Job[T]) {
+func (s *jsonStorage[T]) Delete(j Job[T]) {
 	content, err := os.ReadFile(s.fileName)
 	if err != nil {
 		panic(err)
@@ -62,7 +62,7 @@ func (s *jsonStorage[T]) delete(j Job[T]) {
 	os.WriteFile(s.fileName, content, 0644)
 }
 
-func (s *jsonStorage[T]) getDue() []Job[T] {
+func (s *jsonStorage[T]) GetDue() []Job[T] {
 	now := time.Now()
 	due := []Job[T]{}
 	entries := []jsonEntry{}
@@ -74,7 +74,7 @@ func (s *jsonStorage[T]) getDue() []Job[T] {
 	for _, e := range entries {
 		if e.Time.Before(now) {
 			j := s.factory.Instantiate(e.Type, e.ID, e.State.(map[string]any))
-			due = append(due, j.(Job[T]))
+			due = append(due, j)
 		}
 	}
 	return due

@@ -24,9 +24,9 @@ func NewWithDependencies[T any](storage SchedulerStorage[T]) *impl[T] {
 func (s *impl[T]) Listen(container T) {
 	log.Println("Scheduler is running")
 	for {
-		for _, j := range s.storage.getDue() {
+		for _, j := range s.storage.GetDue() {
 			j.Run(container)
-			s.storage.delete(j)
+			s.storage.Delete(j)
 		}
 
 		time.Sleep(1 * time.Second)
@@ -34,5 +34,5 @@ func (s *impl[T]) Listen(container T) {
 }
 
 func (s *impl[T]) ScheduleIn(j Job[T], d time.Duration) {
-	s.storage.push(j, time.Now().Add(d))
+	s.storage.Push(j, time.Now().Add(d))
 }
