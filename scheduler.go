@@ -5,19 +5,50 @@ import (
 	"time"
 )
 
-type Scheduler[T any] struct {
-	storage SchedulerStorage[T]
+type schedulerOptions struct {
+	sleepDuration time.Duration
 }
 
-func New[T any](storage SchedulerStorage[T]) *Scheduler[T] {
-	return &Scheduler[T]{
-		storage: storage,
+func newDefaultSchedulerOptions() schedulerOptions {
+	return schedulerOptions{
+		sleepDuration: 1 * time.Second,
 	}
 }
 
-func NewWithDependencies[T any](storage SchedulerStorage[T]) *Scheduler[T] {
+type schedulerOption func(*schedulerOptions)
+
+func WithSleepDuration(d time.Duration) schedulerOption {
+	return func(opts *schedulerOptions) {
+		opts.sleepDuration = d
+	}
+}
+
+type Scheduler[T any] struct {
+	storage SchedulerStorage[T]
+	options schedulerOptions
+}
+
+func New[T any](storage SchedulerStorage[T], opts ...schedulerOption) *Scheduler[T] {
+	options := newDefaultSchedulerOptions()
+	for _, opt := range opts {
+		opt(&options)
+	}
+
 	return &Scheduler[T]{
 		storage: storage,
+		options: options,
+	}
+}
+
+func NewWithDependencies[T any](storage SchedulerStorage[T], opts ...schedulerOption) *Scheduler[T] {
+	options := newDefaultSchedulerOptions()
+	for _, opt := range opts {
+		opt(&options)
+	}
+
+	return &Scheduler[T]{
+		storage: storage,
+		options: options,
 	}
 }
 
@@ -27,7 +58,6 @@ func (s *Scheduler[T]) Listen(container T) {
 		jobs, err := s.storage.GetDue()
 		if err != nil {
 			log.Println("Error getting due jobs:", err)
-			time.Sleep(1 * time.Second)
 			continue
 		}
 
@@ -39,7 +69,7 @@ func (s *Scheduler[T]) Listen(container T) {
 			}
 		}
 
-		time.Sleep(1 * time.Second)
+		time.Sleep(s.options.sleepDuration)
 	}
 }
 

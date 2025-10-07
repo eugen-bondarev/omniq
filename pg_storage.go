@@ -13,6 +13,10 @@ type pgStorageOptions struct {
 	tableName string
 }
 
+func newDefaultPGStorageOptions() pgStorageOptions {
+	return pgStorageOptions{tableName: "omniq_jobs"}
+}
+
 type pgStorageOption func(*pgStorageOptions)
 
 func WithTableName(tableName string) pgStorageOption {
@@ -25,10 +29,6 @@ type pgStorage[T any] struct {
 	db      *sql.DB
 	factory JobFactory[T]
 	options pgStorageOptions
-}
-
-func newDefaultPGStorageOptions() pgStorageOptions {
-	return pgStorageOptions{tableName: "omniq_jobs"}
 }
 
 func NewPGStorage[T any](db *sql.DB, factory JobFactory[T], opts ...pgStorageOption) (*pgStorage[T], error) {

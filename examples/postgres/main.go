@@ -54,7 +54,7 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	scheduler = omniq.NewWithDependencies(pgStorage)
+	scheduler = omniq.NewWithDependencies(pgStorage, omniq.WithSleepDuration(1*time.Second))
 }
 
 func close() {
