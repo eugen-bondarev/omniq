@@ -81,3 +81,5 @@ sayHiJob := &jobs.SayHiJob{
 
 scheduler.ScheduleIn(sayHiJob, 60*time.Minute)
 ```
+
+Check out the [examples](https://github.com/eugen-bondarev/omniq/tree/main/examples) for more details.
