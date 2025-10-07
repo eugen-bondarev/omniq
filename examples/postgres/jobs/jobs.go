@@ -3,12 +3,12 @@ package jobs
 import (
 	"log"
 
+	"github.com/eugen-bondarev/omniq"
 	"github.com/eugen-bondarev/omniq/examples/postgres/deps"
-	"github.com/eugen-bondarev/omniq/job"
 )
 
 type Job1 struct {
-	job.WithID
+	omniq.WithID
 	MyData string
 }
 
@@ -17,7 +17,7 @@ func (j *Job1) Run(container deps.Dependencies) {
 }
 
 type Job2 struct {
-	job.WithID
+	omniq.WithID
 	Answer int
 }
 
@@ -27,7 +27,7 @@ func (j *Job2) Run(container deps.Dependencies) {
 
 // EmailJob demonstrates dependency injection for SMTP service
 type EmailJob struct {
-	job.WithID
+	omniq.WithID
 	To      string
 	Subject string
 	Body    string

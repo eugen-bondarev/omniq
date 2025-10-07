@@ -1,10 +1,8 @@
-package scheduler
+package omniq
 
 import (
 	"log"
 	"time"
-
-	"github.com/eugen-bondarev/omniq/job"
 )
 
 type impl[T any] struct {
@@ -35,6 +33,6 @@ func (s *impl[T]) Listen(container T) {
 	}
 }
 
-func (s *impl[T]) ScheduleIn(j job.Job[T], d time.Duration) {
+func (s *impl[T]) ScheduleIn(j Job[T], d time.Duration) {
 	s.storage.push(j, time.Now().Add(d))
 }

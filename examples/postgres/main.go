@@ -6,10 +6,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/eugen-bondarev/omniq"
 	"github.com/eugen-bondarev/omniq/examples/postgres/deps"
 	"github.com/eugen-bondarev/omniq/examples/postgres/jobs"
 	"github.com/eugen-bondarev/omniq/examples/postgres/services"
-	"github.com/eugen-bondarev/omniq/scheduler"
 
 	_ "github.com/lib/pq"
 )
@@ -52,7 +52,7 @@ func main() {
 
 	factory := &jobs.JobFactory{}
 
-	pgStorage := scheduler.NewPGStorage(db, factory)
+	pgStorage := omniq.NewPGStorage(db, factory)
 	// jsonStorage := scheduler.NewJSONStorage[deps.Dependencies]("scheduler_state.json")
 
 	container := deps.Dependencies{
@@ -60,7 +60,7 @@ func main() {
 	}
 
 	// Create scheduler with dependencies
-	s := scheduler.NewWithDependencies(pgStorage)
+	s := omniq.NewWithDependencies(pgStorage)
 	// s := scheduler.NewWithDependencies(scheduler.NewJSONStorage[deps.Dependencies]("scheduler_state.json"))
 
 	// Schedule jobs

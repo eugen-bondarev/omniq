@@ -1,11 +1,9 @@
-package scheduler
+package omniq
 
 import (
 	"encoding/json"
 	"os"
 	"time"
-
-	"github.com/eugen-bondarev/omniq/job"
 
 	"github.com/google/uuid"
 )
@@ -26,7 +24,7 @@ func NewJSONStorage[T any](fileName string, factory JobFactory[T]) *jsonStorage[
 	return &jsonStorage[T]{fileName: fileName, factory: factory}
 }
 
-func (s *jsonStorage[T]) push(j job.Job[T], t time.Time) {
+func (s *jsonStorage[T]) push(j Job[T], t time.Time) {
 	content, err := os.ReadFile(s.fileName)
 	if err != nil {
 		panic(err)
@@ -44,7 +42,7 @@ func (s *jsonStorage[T]) push(j job.Job[T], t time.Time) {
 	os.WriteFile(s.fileName, content, 0644)
 }
 
-func (s *jsonStorage[T]) delete(j job.Job[T]) {
+func (s *jsonStorage[T]) delete(j Job[T]) {
 	content, err := os.ReadFile(s.fileName)
 	if err != nil {
 		panic(err)
@@ -64,9 +62,9 @@ func (s *jsonStorage[T]) delete(j job.Job[T]) {
 	os.WriteFile(s.fileName, content, 0644)
 }
 
-func (s *jsonStorage[T]) getDue() []job.Job[T] {
+func (s *jsonStorage[T]) getDue() []Job[T] {
 	now := time.Now()
-	due := []job.Job[T]{}
+	due := []Job[T]{}
 	entries := []jsonEntry{}
 	content, err := os.ReadFile(s.fileName)
 	if err != nil {
@@ -76,7 +74,7 @@ func (s *jsonStorage[T]) getDue() []job.Job[T] {
 	for _, e := range entries {
 		if e.Time.Before(now) {
 			j := s.factory.Instantiate(e.Type, e.ID, e.State.(map[string]any))
-			due = append(due, j.(job.Job[T]))
+			due = append(due, j.(Job[T]))
 		}
 	}
 	return due

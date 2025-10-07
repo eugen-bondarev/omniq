@@ -1,4 +1,4 @@
-package job
+package omniq
 
 type Job[T any] interface {
 	Run(container T)

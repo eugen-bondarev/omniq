@@ -1,6 +1,6 @@
 package jobs
 
-import "github.com/eugen-bondarev/omniq/job"
+import "github.com/eugen-bondarev/omniq"
 
 func (j *Job1) Type() string {
 	return "Job1"
@@ -14,21 +14,21 @@ func (j *EmailJob) Type() string {
 	return "EmailJob"
 }
 
-func (j *Job1) GetIDContainer() *job.WithID {
+func (j *Job1) GetIDContainer() *omniq.WithID {
 	return &j.WithID
 }
 
-func (j *Job2) GetIDContainer() *job.WithID {
+func (j *Job2) GetIDContainer() *omniq.WithID {
 	return &j.WithID
 }
 
-func (j *EmailJob) GetIDContainer() *job.WithID {
+func (j *EmailJob) GetIDContainer() *omniq.WithID {
 	return &j.WithID
 }
 
 func NewJob1(id string, data map[string]any) *Job1 {
 	return &Job1{
-		WithID: job.WithID{
+		WithID: omniq.WithID{
 			ID: id,
 		},
 		MyData: data["MyData"].(string),
@@ -37,7 +37,7 @@ func NewJob1(id string, data map[string]any) *Job1 {
 
 func NewJob2(id string, data map[string]any) *Job2 {
 	return &Job2{
-		WithID: job.WithID{
+		WithID: omniq.WithID{
 			ID: id,
 		},
 		Answer: int(data["Answer"].(float64)),
@@ -46,7 +46,7 @@ func NewJob2(id string, data map[string]any) *Job2 {
 
 func NewEmailJob(id string, data map[string]any) *EmailJob {
 	return &EmailJob{
-		WithID: job.WithID{
+		WithID: omniq.WithID{
 			ID: id,
 		},
 		To:      data["To"].(string),

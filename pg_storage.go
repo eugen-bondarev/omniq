@@ -1,11 +1,9 @@
-package scheduler
+package omniq
 
 import (
 	"database/sql"
 	"encoding/json"
 	"time"
-
-	"github.com/eugen-bondarev/omniq/job"
 
 	"github.com/google/uuid"
 	_ "github.com/lib/pq"
@@ -31,7 +29,7 @@ func NewPGStorage[T any](db *sql.DB, factory JobFactory[T]) *pgStorage[T] {
 	return &pgStorage[T]{db: db, factory: factory}
 }
 
-func (s *pgStorage[T]) push(j job.Job[T], t time.Time) {
+func (s *pgStorage[T]) push(j Job[T], t time.Time) {
 	id := uuid.New().String()
 	state, err := json.Marshal(j)
 	if err != nil {
@@ -43,20 +41,20 @@ func (s *pgStorage[T]) push(j job.Job[T], t time.Time) {
 	}
 }
 
-func (s *pgStorage[T]) delete(j job.Job[T]) {
+func (s *pgStorage[T]) delete(j Job[T]) {
 	_, err := s.db.Exec("DELETE FROM jobs WHERE id = $1", j.GetIDContainer().GetID())
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (s *pgStorage[T]) getDue() []job.Job[T] {
+func (s *pgStorage[T]) getDue() []Job[T] {
 	rows, err := s.db.Query("SELECT id, time, state, type FROM jobs WHERE time <= $1", time.Now())
 	if err != nil {
 		panic(err)
 	}
 	defer rows.Close()
-	due := []job.Job[T]{}
+	due := []Job[T]{}
 	for rows.Next() {
 		var id string
 		var t time.Time
@@ -72,7 +70,7 @@ func (s *pgStorage[T]) getDue() []job.Job[T] {
 			panic(err)
 		}
 		j := s.factory.Instantiate(typ, id, state)
-		due = append(due, j.(job.Job[T]))
+		due = append(due, j.(Job[T]))
 	}
 
 	return due
