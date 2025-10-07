@@ -30,7 +30,7 @@ func (j *EmailJob) GetIDContainer() *omniq.WithID {
 	return &j.WithID
 }
 
-func NewJob1(id string, data map[string]any) *Job1 {
+func NewJob1(id omniq.JobID, data map[string]any) *Job1 {
 	return &Job1{
 		WithID: omniq.WithID{
 			ID: id,
@@ -39,7 +39,7 @@ func NewJob1(id string, data map[string]any) *Job1 {
 	}
 }
 
-func NewJob2(id string, data map[string]any) *Job2 {
+func NewJob2(id omniq.JobID, data map[string]any) *Job2 {
 	return &Job2{
 		WithID: omniq.WithID{
 			ID: id,
@@ -48,7 +48,7 @@ func NewJob2(id string, data map[string]any) *Job2 {
 	}
 }
 
-func NewEmailJob(id string, data map[string]any) *EmailJob {
+func NewEmailJob(id omniq.JobID, data map[string]any) *EmailJob {
 	return &EmailJob{
 		WithID: omniq.WithID{
 			ID: id,
@@ -62,7 +62,7 @@ func NewEmailJob(id string, data map[string]any) *EmailJob {
 // Registry
 type JobFactory struct{}
 
-func (f *JobFactory) Instantiate(t string, id string, data map[string]any) omniq.Job[deps.Dependencies] {
+func (f *JobFactory) Instantiate(t string, id omniq.JobID, data map[string]any) omniq.Job[deps.Dependencies] {
 	var j omniq.Job[deps.Dependencies]
 	switch t {
 	case "Job1":

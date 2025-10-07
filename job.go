@@ -6,14 +6,16 @@ type Job[T any] interface {
 	GetIDContainer() *WithID
 }
 
+type JobID string
+
 type WithID struct {
-	ID string
+	ID JobID
 }
 
-func (w *WithID) GetID() string {
+func (w *WithID) GetID() JobID {
 	return w.ID
 }
 
-func (w *WithID) SetID(id string) {
+func (w *WithID) SetID(id JobID) {
 	w.ID = id
 }

@@ -9,7 +9,7 @@ import (
 )
 
 type jsonEntry struct {
-	ID    string
+	ID    JobID
 	Time  time.Time
 	State any
 	Type  string
@@ -35,7 +35,7 @@ func (s *jsonStorage[T]) Push(j Job[T], t time.Time) error {
 	entries := []jsonEntry{}
 	json.Unmarshal(content, &entries)
 
-	j.GetIDContainer().SetID(uuid.New().String())
+	j.GetIDContainer().SetID(JobID(uuid.New().String()))
 	entries = append(entries, jsonEntry{ID: j.GetIDContainer().GetID(), Time: t, State: j, Type: j.Type()})
 	content, err = json.Marshal(entries)
 	if err != nil {
@@ -45,7 +45,7 @@ func (s *jsonStorage[T]) Push(j Job[T], t time.Time) error {
 	return nil
 }
 
-func (s *jsonStorage[T]) Delete(j Job[T]) error {
+func (s *jsonStorage[T]) Delete(id JobID) error {
 	content, err := os.ReadFile(s.fileName)
 	if err != nil {
 		return err
@@ -53,7 +53,7 @@ func (s *jsonStorage[T]) Delete(j Job[T]) error {
 	entries := []jsonEntry{}
 	json.Unmarshal(content, &entries)
 	for t, e := range entries {
-		if e.ID == j.GetIDContainer().GetID() {
+		if e.ID == id {
 			entries = append(entries[:t], entries[t+1:]...)
 			break
 		}

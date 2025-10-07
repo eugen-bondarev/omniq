@@ -73,8 +73,8 @@ func (s *pgStorage[T]) Push(j Job[T], t time.Time) error {
 	return nil
 }
 
-func (s *pgStorage[T]) Delete(j Job[T]) error {
-	_, err := s.db.Exec("DELETE FROM "+s.options.tableName+" WHERE id = $1", j.GetIDContainer().GetID())
+func (s *pgStorage[T]) Delete(id JobID) error {
+	_, err := s.db.Exec("DELETE FROM "+s.options.tableName+" WHERE id = $1", id)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (s *pgStorage[T]) GetDue() ([]Job[T], error) {
 	defer rows.Close()
 	due := []Job[T]{}
 	for rows.Next() {
-		var id string
+		var id JobID
 		var t time.Time
 		var stateEncoded json.RawMessage
 		var typ string

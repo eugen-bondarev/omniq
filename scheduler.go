@@ -63,7 +63,7 @@ func (s *Scheduler[T]) Listen(container T) {
 
 		for _, j := range jobs {
 			j.Run(container)
-			err = s.storage.Delete(j)
+			err = s.storage.Delete(j.GetIDContainer().GetID())
 			if err != nil {
 				log.Println("Error deleting job:", err)
 			}

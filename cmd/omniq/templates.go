@@ -59,7 +59,7 @@ import (
 	return &j.WithID
 }
 
-{{end}}{{range .Jobs}}func New{{.Name}}(id string, data map[string]any) *{{.Name}} {
+{{end}}{{range .Jobs}}func New{{.Name}}(id omniq.JobID, data map[string]any) *{{.Name}} {
 	return &{{.Name}}{
 		WithID: omniq.WithID{
 			ID: id,
@@ -71,7 +71,7 @@ import (
 {{end}}// Registry
 type JobFactory struct{}
 
-func (f *JobFactory) Instantiate(t string, id string, data map[string]any) omniq.Job[{{.DepType}}] {
+func (f *JobFactory) Instantiate(t string, id omniq.JobID, data map[string]any) omniq.Job[{{.DepType}}] {
 	var j omniq.Job[{{.DepType}}]
 	switch t {
 {{range .Jobs}}	case "{{.Name}}":
