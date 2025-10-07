@@ -44,7 +44,7 @@ func NewJob2(id string, data map[string]any) *Job2 {
 		WithID: omniq.WithID{
 			ID: id,
 		},
-		Answer: int(data["Answer"].(float64)),
+		Answer: data["Answer"].(float64),
 	}
 }
 

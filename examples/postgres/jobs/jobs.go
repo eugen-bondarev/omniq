@@ -18,7 +18,7 @@ func (j *Job1) Run(container deps.Dependencies) {
 
 type Job2 struct {
 	omniq.WithID
-	Answer int
+	Answer float64
 }
 
 func (j *Job2) Run(container deps.Dependencies) {
