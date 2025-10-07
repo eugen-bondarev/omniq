@@ -46,7 +46,7 @@ func init() {
 	}
 
 	factory := &jobs.JobFactory{}
-	pgStorage := omniq.NewPGStorage(db, factory)
+	pgStorage := omniq.NewPGStorage(db, factory, omniq.WithTableName("lorem_ipsum"))
 	s = omniq.NewWithDependencies(pgStorage)
 }
 
