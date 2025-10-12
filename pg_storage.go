@@ -91,14 +91,9 @@ func (s *pgStorage[T]) GetDue() ([]Job[T], error) {
 	for rows.Next() {
 		var id JobID
 		var t time.Time
-		var stateEncoded json.RawMessage
+		var state string
 		var typ string
-		err = rows.Scan(&id, &t, &stateEncoded, &typ)
-		if err != nil {
-			return nil, err
-		}
-		state := map[string]any{}
-		err = json.Unmarshal(stateEncoded, &state)
+		err = rows.Scan(&id, &t, &state, &typ)
 		if err != nil {
 			return nil, err
 		}

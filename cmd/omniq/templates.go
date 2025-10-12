@@ -46,7 +46,10 @@ func (j *{{.JobName}}) Run({{.RunParams}}) {
 const generateTemplate = `package {{.Package}}
 
 import (
+	"encoding/json"
+	
 	"github.com/eugen-bondarev/omniq"
+
 {{if .DepImport}}	"{{.DepImport}}"{{end}}
 )
 
@@ -59,19 +62,17 @@ import (
 	return &j.WithID
 }
 
-{{end}}{{range .Jobs}}func New{{.Name}}(id omniq.JobID, data map[string]any) *{{.Name}} {
-	return &{{.Name}}{
-		WithID: omniq.WithID{
-			ID: id,
-		},{{range .Fields}}
-		{{.Name}}: data["{{.Name}}"].({{.Type}}),{{end}}
-	}
+{{end}}{{range .Jobs}}func New{{.Name}}(id omniq.JobID, data string) *{{.Name}} {
+	var j {{.Name}}
+	json.Unmarshal([]byte(data), &j)
+	j.ID = id
+	return &j
 }
 
 {{end}}// Registry
 type JobFactory struct{}
 
-func (f *JobFactory) Instantiate(t string, id omniq.JobID, data map[string]any) omniq.Job[{{.DepType}}] {
+func (f *JobFactory) Instantiate(t string, id omniq.JobID, data string) omniq.Job[{{.DepType}}] {
 	var j omniq.Job[{{.DepType}}]
 	switch t {
 {{range .Jobs}}	case "{{.Name}}":

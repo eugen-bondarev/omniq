@@ -77,7 +77,7 @@ func (s *jsonStorage[T]) GetDue() ([]Job[T], error) {
 	json.Unmarshal(content, &entries)
 	for _, e := range entries {
 		if e.Time.Before(now) {
-			j := s.factory.Instantiate(e.Type, e.ID, e.State.(map[string]any))
+			j := s.factory.Instantiate(e.Type, e.ID, e.State.(string))
 			due = append(due, j)
 		}
 	}
